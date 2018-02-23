@@ -27,14 +27,16 @@ J = grad(X)
 
 Jinv = dot(inv(dot(J.T,J)),J.T)
 def Xgrad(q):
-    return dot(Jinv.T, grad(q))
+    return dot(Jinv.T, grad(q).T)
 
-
+j1 = as_vector([X[0].dx(0),X[1].dx(0),X[2].dx(0)])
+j2 = as_vector([X[0].dx(1),X[1].dx(1),X[2].dx(1)])
+n_mag = cross(j1,j2)
+n = cross(j1,j2)/(dot(n_mag,n_mag)**0.5)
 
 #need to define a normal
 #need to include a change of measure
 
 F = (
-    inner(Xgrad(kappa), Xgrad(chi)) +
     inner(kappa*n, nu) + inner(Xgrad(X), Xgrad(nu))
     )*dx
