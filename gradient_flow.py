@@ -7,17 +7,14 @@ deg = 2
 #mesh = UnitIcosahedralSphereMesh(ref_level, degree=deg)
 mesh = UnitOctahedralSphereMesh(ref_level, degree=deg, hemisphere="north")
 Xn = mesh.coordinates
-mesh.init_cell_orientations(Xn)
 V = VectorFunctionSpace(mesh, "CG", deg)
 K = FunctionSpace(mesh, "CG", deg)
-Xbcs = Function(V).interpolate(Xn + 0.7*as_vector([0.,0.,Xn[0]*Xn[1]]))
-mesh.coordinates.assign(Xbcs)
+Xbcs = Function(V).assign(Xn)
 
-V = VectorFunctionSpace(mesh, "CG", deg)
+mesh.init_cell_orientations(Xn)
+nu = TestFunction(V)
+
 Xnp = Function(V).assign(Xbcs)
-tfile = File('curvatureflow.pvd')
-tfile.write(Xnp)
-
 eta = TestFunction(V)
 
 nu = CellNormal(mesh)
@@ -41,13 +38,17 @@ solver = NonlinearVariationalSolver(prob,
                                      'ksp_type': 'preonly',
                                      'pc_type': 'lu'})
 
-T = 1.0
+T = 0.5
 t = 0.
 
+file = File('curvatureflow.pvd')
+
+Xnp.assign(Xn)
+file.write(Xnp)
 while t < T - Dt/2:
     print(t)
     t += Dt
     solver.solve()
 
     mesh.coordinates.assign(Xnp)
-    tfile.write(Xnp)
+    file.write(Xnp)

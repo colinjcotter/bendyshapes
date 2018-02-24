@@ -14,22 +14,43 @@ Xbcs = Function(V).interpolate(Xn + 0.7*as_vector([0.,0.,Xn[0]*Xn[1]]))
 mesh.coordinates.assign(Xbcs)
 
 V = VectorFunctionSpace(mesh, "CG", deg)
-Xnp = Function(V).assign(Xbcs)
-tfile = File('curvatureflow.pvd')
-tfile.write(Xnp)
+Q = FunctionSpace(mesh, "CG", deg-1)
+W = MixedFunctionSpace((V,Q))
 
-eta = TestFunction(V)
+w = Function(W)
+Xnp, p = w.split()
+
+Xnp.assign(Xbcs)
+Xoot = Function(V)
+Xoot.assign(Xnp-Xn)
+poot = Function(Q)
+poot.assign(p)
+
+eta, q = TestFunctions(W)
 
 nu = CellNormal(mesh)
-Dt = 1.0e-2
+Dt = 1.0e-1
 dt = Constant(Dt)
+
+Xnp, p = split(w)
+
+J = Jacobian(mesh)
+b1 = J[:,0]
+b2 = J[:,1]
+bp1 = dot(grad(Xnp),b1)
+bp2 = dot(grad(Xnp),b2)
+nup_unscaled = cross(bp1,bp2)
+nup = nup_unscaled/(dot(nup_unscaled,nup_unscaled)**0.5)
+
+P = Identity(3) - outer(nu,nu)
 
 F = (
     inner(Xnp - Xn, eta) + dt*inner(grad(Xnp),grad(eta))
+    -dt*inner(div(eta), p)
+    +q*(det(dot(grad(Xnp),P) + outer(nup,nu))-1)
     )*dx
 
-bcs = [DirichletBC(V, Xbcs, "on_boundary")]
-prob = NonlinearVariationalProblem(F, Xnp, bcs=bcs)
+prob = NonlinearVariationalProblem(F, w)
 
 solver = NonlinearVariationalSolver(prob,
                                     solver_parameters=
@@ -39,15 +60,23 @@ solver = NonlinearVariationalSolver(prob,
                                      'snes_linesearch_type':'basic',
                                      "snes_monitor":True,
                                      'ksp_type': 'preonly',
+                                     'pc_factor_mat_solver_package': 'mumps',
                                      'pc_type': 'lu'})
 
-T = 1.0
+T = 10.0
 t = 0.
+
+tfile = File('incompressiblecurvatureflow.pvd')
+tfile.write(Xoot,poot)
 
 while t < T - Dt/2:
     print(t)
     t += Dt
     solver.solve()
 
+    Xnp, p = w.split()
+    Xoot.assign(Xnp-Xn)
+    poot.assign(p)
+    tfile.write(Xoot,poot)
     mesh.coordinates.assign(Xnp)
-    tfile.write(Xnp)
+
