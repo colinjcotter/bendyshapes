@@ -9,32 +9,30 @@ mesh = UnitOctahedralSphereMesh(ref_level, degree=deg, hemisphere="north")
 Xn = mesh.coordinates
 V = VectorFunctionSpace(mesh, "CG", deg)
 K = FunctionSpace(mesh, "CG", deg)
-Xs = Function(V)
 Xbcs = Function(V).assign(Xn)
 
 mesh.init_cell_orientations(Xn)
 nu = TestFunction(V)
 
-W = MixedFunctionSpace((V,K))
-w = Function(W)
-Xnp, kappa = split(w)
-eta, chi = TestFunctions(W)
+Xnp = Function(V).assign(Xbcs)
+eta = TestFunction(V)
 
 nu = CellNormal(mesh)
-Dt = 0.01
+Dt = 1.0e-2
 dt = Constant(Dt)
 
 F = (
-    inner(Xnp - Xn, chi*nu) - dt*kappa*chi +
-    inner(kappa*nu, eta) + inner(grad(Xnp), grad(eta))
+    inner(Xnp - Xn, eta) + dt*inner(grad(Xnp),grad(eta))
     )*dx
 
-bcs = [DirichletBC(W[0], Xbcs, "on_boundary")]
-prob = NonlinearVariationalProblem(F, w, bcs=bcs)
+bcs = [DirichletBC(V, Xbcs, "on_boundary")]
+prob = NonlinearVariationalProblem(F, Xnp, bcs=bcs)
 
 solver = NonlinearVariationalSolver(prob,
                                     solver_parameters=
                                     {'mat_type': 'aij',
+                                     'snes_converged_reason':True,
+                                     'ksp_converged_reason':True,
                                      'snes_linesearch_type':'basic',
                                      "snes_monitor":True,
                                      'ksp_type': 'preonly',
@@ -45,14 +43,12 @@ t = 0.
 
 file = File('curvatureflow.pvd')
 
-Xs.assign(Xn)
-file.write(Xs)
+Xnp.assign(Xn)
+file.write(Xnp)
 while t < T - Dt/2:
     print(t)
     t += Dt
     solver.solve()
 
-    X_out, kappa_out = w.split()
-    mesh.coordinates.assign(X_out)
-    Xs.assign(X_out)
-    file.write(Xs)
+    mesh.coordinates.assign(Xnp)
+    file.write(Xnp)
