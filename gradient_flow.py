@@ -18,7 +18,7 @@ Xnp = Function(V).assign(Xbcs)
 eta = TestFunction(V)
 
 nu = CellNormal(mesh)
-Dt = 1.0e-2
+Dt = 1.0e-5
 dt = Constant(Dt)
 
 F = (

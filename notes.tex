@@ -1,0 +1,128 @@
+\documentclass{article}
+\usepackage[nosumlimits]{amsmath}
+\usepackage{amssymb,amsthm,MnSymbol}
+\def\MM#1{\boldsymbol{#1}}
+\newcommand{\pp}[2]{\frac{\partial #1}{\partial #2}} 
+\newcommand{\dede}[2]{\frac{\delta #1}{\delta #2}}
+\newcommand{\dd}[2]{\frac{\diff#1}{\diff#2}}
+\newcommand{\dt}[1]{\diff\!#1}
+\def\MM#1{\boldsymbol{#1}}
+\DeclareMathOperator{\diff}{d}
+\DeclareMathOperator{\Id}{Id}
+\DeclareMathOperator{\DIV}{DIV}
+\DeclareMathOperator{\D}{D}
+\usepackage{amscd}
+\usepackage{natbib}
+\bibliographystyle{elsarticle-harv}
+\usepackage{helvet}
+\usepackage{amsfonts}
+\renewcommand{\familydefault}{\sfdefault} %% Only if the base font of the docume
+\newcommand{\vecx}[1]{\MM{#1}}
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newcommand{\code}[1]{{\ttfamily #1}} 
+\usepackage[margin=2cm]{geometry}
+\newcommand{\jump}[1]{\left[\!\!\left[ #1 \right]\!\!\right]}
+
+\usepackage{fancybox}
+\begin{document}
+\title{Notes on isometric mean curvature flow}
+\author{CJC et al}
+\maketitle
+
+Let $\Omega(t)$ be a surface immersed in $\mathbb{R}^3$.  The classical
+mean curvature flow solves
+\begin{equation}
+\dd{}{t}\MM{X} = \kappa(\MM{X})\MM{\nu}(\MM{X}),
+\end{equation}
+for each point $\MM{X}\in\Omega(t)$, where $\kappa(\MM{X})$ is the
+mean curvature of $\Omega(t)$ at $\MM{X}$, defined by
+\begin{equation}
+\Delta_s \Id = \kappa \MM{\nu}, \quad \mbox{ on }\Omega(t),
+\end{equation}
+where $\Delta_s$ is the surface Laplacian, $\Id$ is the identity map
+on $\Omega(t)$ and $\MM{\nu}$ is the unit oriented normal to
+$\Omega(t)$. When equipped with boundary conditions constraining
+the boundary of $\Omega(t)$, solutions of this equation can converge
+to steady state zero mean curvature surfaces as $t\to \infty$.
+
+A linear in time, finite element in space discretisation of this
+equation is to find $\MM{X}^{n+1}\in V$ (where $V$ is a $C^0$
+vector-valued finite element space supported on a triangulation of
+$\Omega(t^n)$) such that
+\begin{equation}
+\label{eq:discrete flow}
+\langle \MM{X}^{n+1} - \MM{x}, \MM{\MM{\eta}} \rangle
++\Delta t \langle \nabla_s \MM{X}^{n+1}, \nabla_s \MM{\MM{\eta}}\rangle = 0,
+\quad \forall \MM{\MM{\eta}}\in V,
+\end{equation}
+where $\nabla_s$ defines the surface gradient on $\Omega(t^n)$.  After
+solving this system, $\MM{X}^{n+1}$ is used to move
+$\Omega(t^n)$ to $\Omega(t^{n+1})$ and the numerical integration
+continues. This mixture of implicit solution of $\MM{X}^{n+1}$ with
+evaluation of $\nabla_s$ at the time level $t^n$ is useful
+because it is implicit enough to be stable whilst keeping the equation
+linear.
+
+Now we would like to introduce an isometry constraint in a framework
+where $\nabla_s$ is represented as an element of $\mathbb{R}^3$, which
+happens to have no component in the direction normal to $\MM{\nu}$.
+We write $\MM{X}_0(\MM{x})$ as the map from points on $\Omega(t)$ to
+points on $\Omega(0)$.
+For the map $\MM{x}\to \MM{X}_0(\MM{x})$ to be an isometry, we
+require $\nabla_s\MM{X}_0$ to be orthogonal. When calculating
+with vectors represented in $\mathbb{R}^3$, this requires the addition
+of components normal to $\Omega(t^n)$, i.e. we have the constraint
+\begin{equation}
+(\nabla \MM{X}_0)^T\cdot \nabla \MM{X}_0 + \MM{\nu}\otimes\MM{\nu} = I,
+\end{equation}
+where $(\MM{\nu}\otimes\MM{\nu})_{ij}=\nu_i\nu_j$.
+
+Introducing a 2-component-tensor-valued function space $W$, a weak
+form of this equation is
+\begin{equation} 
+0 = F[\chi;\MM{X}_0] = \int_\Omega \chi : \left(
+(\nabla\MM{X})^T\cdot\nabla\MM{X} + \MM{\nu}\otimes\MM{\nu} - I\right)\diff x,
+\quad \forall \chi \in W.
+\end{equation}
+We would like to introduce Lagrange multipliers $\Phi\in W$ to
+Equation \eqref{eq:discrete flow} to enforce this constraint. The correct
+form of the term is obtained by linearising $F$,
+\begin{align}
+  F'[\chi,\MM{\nu};\MM{X}_0] & =
+  \lim_{\epsilon\to 0}\frac{1}{\epsilon}
+  \left(F[\chi,\MM{X}_0+\epsilon \MM{\eta}] - F[\chi,\MM{X}_0]\right), \\
+  & = 2\int_\Omega \chi:\nabla\MM{X}^T_0\cdot \nabla\MM{\eta}\diff x.
+\end{align}
+This means that we modify the weak form of the equations to get the
+following constrained system,
+\begin{align}
+\int_\Omega \MM{\nu} \cdot \dot{\MM{X}} \diff x
++\int_\Omega \nabla_s \MM{X}^{n+1} : \nabla_s \MM{\MM{\eta}}\diff x 
+- \int_\Omega \Phi : \nabla\MM{X}^T_0\cdot \nabla\MM{\eta}\diff x &= 0,
+\quad \forall \MM{\MM{\eta}}\in V, \\
+\int_\Omega \chi : \left(
+(\nabla\MM{X})^T\cdot\nabla\MM{X} + \MM{\nu}\otimes\MM{\nu} - I\right)\diff x & =
+0, 
+\quad \forall \chi \in W.
+\end{align}
+This can form the starting point for a finite element discretiation of
+the isometric mean curvature flow. There are some interesting
+questions about how to choose finite element spaces for $V$ and $W$ so
+that the discretisation is stable (or how to stabilise it with extra
+terms if this is not possible).
+
+If everything is smooth enough then we can integrate by parts, and neglect
+a surface term (by choosing appropriate boundary conditions for $\MM{X}_0$ or
+$\chi$ to obtain the strong form equations
+\begin{equation}
+  \dot{\MM{X}} = \kappa\MM{\nu} - \nabla\cdot\left(\left(\nabla\MM{X}_0\cdot\Phi\right)^T\right),
+  \quad (\nabla \MM{X}_0)^T\cdot \nabla \MM{X}_0 + \MM{\nu}\otimes\MM{\nu} = I.
+\end{equation}
+I need to spend a bit more time checking whether the constraint term
+results in any component in the $\MM{nu}$ direction, which would mean that
+a steady state solution is not a zero curvature flow (i.e., the system
+is over-constrained).
+
+\end{document}

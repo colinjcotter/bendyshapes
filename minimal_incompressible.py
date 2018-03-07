@@ -29,7 +29,7 @@ poot.assign(p)
 eta, q = TestFunctions(W)
 
 nu = CellNormal(mesh)
-Dt = 1.0e-1
+Dt = 1.0e-3
 dt = Constant(Dt)
 
 Xnp, p = split(w)
@@ -57,7 +57,6 @@ solver = NonlinearVariationalSolver(prob,
                                     {'mat_type': 'aij',
                                      'snes_converged_reason':True,
                                      'ksp_converged_reason':True,
-                                     'snes_linesearch_type':'basic',
                                      "snes_monitor":True,
                                      'ksp_type': 'preonly',
                                      'pc_factor_mat_solver_package': 'mumps',
