@@ -67,9 +67,9 @@ solver = NonlinearVariationalSolver(prob,
                                     {'mat_type': 'aij',
                                      'snes_converged_reason':True,
                                      'ksp_converged_reason':True,
-                                     'snes_linesearch_type':'basic',
                                      "snes_monitor":True,
                                      'ksp_type': 'preonly',
+                                     'pc_factor_mat_solver_package':'mumps',
                                      'pc_type': 'lu'})
 
 T = 0.5
