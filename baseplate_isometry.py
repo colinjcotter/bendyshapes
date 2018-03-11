@@ -7,28 +7,28 @@ nl = 40
 
 mesh = RectangleMesh(nl, nw, Lx, Ly)
 X0 = mesh.coordinates
-V = VectorFunctionSpace(mesh, "CG", deg=1, dim=3)
+V = VectorFunctionSpace(mesh, "CG", degree=1, dim=3)
 X03D = Function(V).interpolate(as_vector([X0[0],X0[1],0.]))
 
 deg = 2
 mesh = Mesh(X03D)
 X0 = mesh.coordinates
 V = VectorFunctionSpace(mesh, "CG", deg)
-Q = FunctionSpace(mesh, "CG", deg-1)
+Q = TensorFunctionSpace(mesh, "CG", deg-1, shape=(2,2))
 
 Dt = 1.0e-5
 dt = Constant(Dt)
 
-Xn = Function(V).assign(X0)
+Xn = Function(V).interpolate(X0)
 
-W = FunctionSpace((V,Q))
+W = MixedFunctionSpace((V,Q))
 w = Function(W)
 Xnp, P = w.split()
 Xnp.assign(Xn)
 
 Xnp, P = split(w)
 
-eta, Sig = TestFunction(W)
+eta, Sig = TestFunctions(W)
 
 def grad2D(Z):
     return as_tensor([[Z[0].dx(0), Z[0].dx(1)],
@@ -43,7 +43,8 @@ detJ = inner(Jcross,Jcross)**0.5
 F = (
     inner(Xnp - Xn, eta)*detJ + dt*inner(dot(Jdag.T,grad2D(Xnp).T),
                                          dot(Jdag.T,grad2D(eta).T)*detJ)
-    
+    - inner( P, dot( grad(Xnp).T, grad(eta)) )
+    + inner( dot(grad(Xnp).T, grad(Xnp)) - Identity(2), Sig)
 )*dx
 
 theta= Constant(pi/4)
