@@ -13,7 +13,7 @@ X03D = Function(V).interpolate(as_vector([X0[0],X0[1],0.]))
 deg = 2
 mesh = Mesh(X03D)
 X0 = mesh.coordinates
-V = VectorFunctionSpace(mesh, "CG", deg)
+V = VectorFunctionSpace(mesh, "CG", deg, dim=3)
 Q = TensorFunctionSpace(mesh, "CG", deg-1, shape=(2,2))
 
 Dt = 1.0e-5
@@ -43,8 +43,8 @@ detJ = inner(Jcross,Jcross)**0.5
 F = (
     inner(Xnp - Xn, eta)*detJ + dt*inner(dot(Jdag.T,grad2D(Xnp).T),
                                          dot(Jdag.T,grad2D(eta).T)*detJ)
-    - inner( P, dot( grad(Xnp).T, grad(eta)) )
-    + inner( dot(grad(Xnp).T, grad(Xnp)) - Identity(2), Sig)
+    - inner( P, dot( grad2D(Xnp).T, grad2D(eta)) )
+    + inner( dot(grad2D(Xnp).T, grad2D(Xnp)) - Identity(2), Sig)
 )*dx
 
 theta= Constant(pi/4)
@@ -54,11 +54,12 @@ X_bc0 = as_vector([s*Lx*cos(theta),
                    s*Lx*sin(theta)])
 X_bc1 = as_vector([s*Lx*cos(theta),
                    X0[1],0.])
+X_bc = Function(V)
 
 tval = Constant(0.)
-t0 = Constant(0.25)
+t0 = 0.25
 
-bcs = [DirichletBC(W.sub(0), X_bc0 + tval*(X_bc1-X_bc0), (1,2))]
+bcs = [DirichletBC(W.sub(0), X_bc, (1,2))]
 prob = NonlinearVariationalProblem(F, w, bcs=bcs)
 
 solver = NonlinearVariationalSolver(prob,
@@ -78,18 +79,19 @@ file = File('baseplateflow.pvd')
 
 Xnp, P = w.split()
 
-mesh.coordinates.assign(Xnp)
+mesh.coordinates.interpolate(Xnp)
 file.write(Xnp)
-mesh.coordinates.assign(X0)
+mesh.coordinates.interpolate(X0)
 
 while t < T - Dt/2:
     print(t)
     t += Dt
+    X_bc.interpolate(X_bc0 + tval*(X_bc1-X_bc0))
     tval.assign(max(t/t0, 1.0))
     solver.solve()
 
-    mesh.coordinates.assign(Xnp)
+    mesh.coordinates.interpolate(Xnp)
     file.write(Xnp)
-    mesh.coordinates.assign(X0)
+    mesh.coordinates.interpolate(X0)
 
     Xn.assign(Xnp)
