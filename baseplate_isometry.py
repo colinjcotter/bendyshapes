@@ -43,7 +43,8 @@ detJ = inner(Jcross,Jcross)**0.5
 F = (
     inner(Xnp - Xn, eta)*detJ + dt*inner(dot(Jdag.T,grad2D(Xnp).T),
                                          dot(Jdag.T,grad2D(eta).T)*detJ)
-    - inner( P, dot( grad2D(Xnp).T, grad2D(eta)) )
+    - inner( P, dot( grad2D(Xnp).T, grad2D(eta)) +
+             dot( grad2D(eta).T, grad2D(Xnp)))
     + inner( dot(grad2D(Xnp).T, grad2D(Xnp)) - Identity(2), Sig)
 )*dx
 
