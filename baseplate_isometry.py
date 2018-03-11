@@ -15,22 +15,19 @@ mesh = Mesh(X03D)
 X0 = mesh.coordinates
 V = VectorFunctionSpace(mesh, "CG", deg)
 Q = FunctionSpace(mesh, "CG", deg-1)
-Rot = Constant(1.0/8)*2*pi*X0[0]/Lx
-Xbcs = Function(V).interpolate(as_vector([X0[0],
-                                          0.5 + cos(Rot)*(X0[1]-0.5),
-                                          0.5 + sin(Rot)*(X0[1]-0.5)]))
 
-    
 Dt = 1.0e-5
 dt = Constant(Dt)
 
-Xn = Function(V).assign(Xbcs)
+Xn = Function(V).assign(X0)
 
 W = FunctionSpace((V,Q))
 w = Function(W)
-Xnp, P = split()
+Xnp, P = w.split()
+Xnp.assign(Xn)
 
-Xnp.assign(Xbcs)
+Xnp, P = split(w)
+
 eta, Sig = TestFunction(W)
 
 def grad2D(Z):
@@ -49,8 +46,19 @@ F = (
     
 )*dx
 
-bcs = [DirichletBC(V, Xbcs, (1,2))]
-prob = NonlinearVariationalProblem(F, Xnp, bcs=bcs)
+theta= Constant(pi/4)
+s = X0[0]/Lx
+X_bc0 = as_vector([s*Lx*cos(theta),
+                   X0[1],
+                   s*Lx*sin(theta)])
+X_bc1 = as_vector([s*Lx*cos(theta),
+                   X0[1],0.])
+
+tval = Constant(0.)
+t0 = Constant(0.25)
+
+bcs = [DirichletBC(W.sub(0), X_bc0 + tval*(X_bc1-X_bc0), (1,2))]
+prob = NonlinearVariationalProblem(F, w, bcs=bcs)
 
 solver = NonlinearVariationalSolver(prob,
                                     solver_parameters=
@@ -67,7 +75,7 @@ t = 0.
 
 file = File('baseplateflow.pvd')
 
-dX = Function(V)
+Xnp, P = w.split()
 
 mesh.coordinates.assign(Xnp)
 file.write(Xnp)
@@ -76,6 +84,7 @@ mesh.coordinates.assign(X0)
 while t < T - Dt/2:
     print(t)
     t += Dt
+    tval.assign(max(t/t0, 1.0))
     solver.solve()
 
     mesh.coordinates.assign(Xnp)
