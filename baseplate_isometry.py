@@ -14,16 +14,27 @@ deg = 2
 mesh = Mesh(X03D)
 X0 = mesh.coordinates
 V = VectorFunctionSpace(mesh, "CG", deg, dim=3)
-Q = TensorFunctionSpace(mesh, "CG", deg-1, shape=(2,2))
+Q = TensorFunctionSpace(mesh, "DG", deg-2, shape=(2,2))
 
 Dt = 1.0e-5
 dt = Constant(Dt)
 
-Xn = Function(V).interpolate(X0)
+theta= Constant(pi/4)
+s = X0[0]/Lx
+X_bc0 = as_vector([s*Lx*cos(theta),
+                   X0[1],
+                   s*Lx*sin(theta)])
+X_bc1 = as_vector([s*Lx*cos(theta),
+                   X0[1],0.])
+X_bc = Function(V)
+
+tval = Constant(0.)
+t0 = 0.25
 
 W = MixedFunctionSpace((V,Q))
 w = Function(W)
 Xnp, P = w.split()
+Xn = Function(V).interpolate(X_bc0)
 Xnp.assign(Xn)
 
 Xnp, P = split(w)
@@ -48,17 +59,6 @@ F = (
     + inner( dot(grad2D(Xnp).T, grad2D(Xnp)) - Identity(2), Sig)
 )*dx
 
-theta= Constant(pi/4)
-s = X0[0]/Lx
-X_bc0 = as_vector([s*Lx*cos(theta),
-                   X0[1],
-                   s*Lx*sin(theta)])
-X_bc1 = as_vector([s*Lx*cos(theta),
-                   X0[1],0.])
-X_bc = Function(V)
-
-tval = Constant(0.)
-t0 = 0.25
 
 bcs = [DirichletBC(W.sub(0), X_bc, (1,2))]
 prob = NonlinearVariationalProblem(F, w, bcs=bcs)
